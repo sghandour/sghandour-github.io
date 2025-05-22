@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Duplicate Pie Charts: Touch & Alfa with 30 Ticks and Labels</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      display: flex;
+      gap: 40px;
+      border-left: 2px solid #888;
+      border-right: 2px solid #888;
+      padding: 0 20px;
+    }
+    .chart-block {
+      width: 360px;
+    }
+    svg.chart {
+      width: 320px;
+      height: 320px;
+      display: block;
+      margin: 0 auto 10px auto;
+      user-select: none;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .controls {
+      text-align: center;
+    }
+    .input-group {
+      margin: 10px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="number"] {
+      width: 70px;
+      padding: 4px 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+	input[type="date"] {
+      width: 124px;
+      padding: 4px 6px;
+      font-size: 14px;
+      text-align: center;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .tick-label {
+      font-size: 10px;
+      fill: #333;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="chart-block" id="TouchBlock">
+    <h2>Touch</h2>
+    <svg class="chart" viewBox="0 -5 300 310" id="TouchSVG">
+      <circle cx="150" cy="150" r="130" fill="#ccc" />
+      <g id="TouchTickMarks"></g>
+      <path id="TouchOuterWedge" />
+      <path id="TouchYellowArc" fill="none" stroke="gold" stroke-width="20" stroke-linecap="butt" />
+    </svg>
+    <div class="controls">
+      <div class="input-group">
+        <label for="TouchOuterCurrent">Current</label>
+        <input type="number" id="TouchOuterCurrent" min="0" step="0.01" onchange="updateChart('Touch')" />
+        <label for="TouchOuterMax">Max</label>
+        <input type="number" id="TouchOuterMax" min="1" />
+      </div>
+      <div class="input-group">
+        <label for="TouchEndDate">End Date</label>
+        <input type="date" id="TouchEndDate" />
+      </div>
+      <button onclick="updateChart('Touch')">Update</button>
+    </div>
+  </div>
+
+  <div class="chart-block" id="AlfaBlock">
+    <h2>Alfa</h2>
+    <svg class="chart" viewBox="0 -5 300 310" id="AlfaSVG">
+      <circle cx="150" cy="150" r="130" fill="#ccc" />
+      <g id="AlfaTickMarks"></g>
+      <path id="AlfaOuterWedge" />
+      <path id="AlfaYellowArc" fill="none" stroke="gold" stroke-width="20" stroke-linecap="butt" />
+    </svg>
+    <div class="controls">
+      <div class="input-group">
+        <label for="AlfaOuterCurrent">Current</label>
+        <input type="number" id="AlfaOuterCurrent" min="0" step="0.01" onchange="updateChart('Alfa')" />
+        <label for="AlfaOuterMax">Max</label>
+        <input type="number" id="AlfaOuterMax" min="1" />
+      </div>
+      <div class="input-group">
+        <label for="AlfaEndDate">End Date</label>
+        <input type="date" id="AlfaEndDate" />
+      </div>
+      <button onclick="updateChart('Alfa')">Update</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const MAX_DAYS = 30;
+
+  function polarToCartesian(cx, cy, r, angleInDegrees) {
+    const angleInRadians = angleInDegrees * Math.PI / 180;
+    return {
+      x: cx + r * Math.cos(angleInRadians),
+      y: cy + r * Math.sin(angleInRadians)
+    };
+  }
+
+  function updateWedge(id, currentValue, maxValue, radius, fillColor) {
+    const percent = Math.max(0, Math.min(currentValue / maxValue, 1));
+    const angle = 360 * percent;
+
+    if (percent === 0) {
+      document.getElementById(id).setAttribute("d", "");
+      return;
+    }
+
+    const cx = 150;
+    const cy = 150;
+
+    const startAngle = 90;
+	let endAngle;
+	if ( angle == 360 ) {
+		endAngle = 449.99;
+	} else {
+		endAngle = startAngle + angle;
+	}
+	
+	const start = polarToCartesian(cx, cy, radius, startAngle);
+    const end = polarToCartesian(cx, cy, radius, endAngle);
+    const largeArcFlag = angle > 180 ? 1 : 0;
+	
+	const d = [
+	  "M", cx, cy,
+	  "L", start.x, start.y,
+	  "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y,
+	  "Z"
+	].join(" ");
+	
+	const wedge = document.getElementById(id);
+    wedge.setAttribute("d", d);
+    wedge.setAttribute("fill", fillColor);
+  }
+
+  function updateArc(id, currentValue, maxValue, radius) {
+    const percent = Math.max(0, Math.min(currentValue / maxValue, 1));
+    const angle = 360 * percent;
+
+    if (percent === 0) {
+      document.getElementById(id).setAttribute("d", "");
+      return;
+    }
+
+    const cx = 150;
+    const cy = 150;
+
+    const startAngle = 90;
+    const endAngle = startAngle + angle;
+
+    const start = polarToCartesian(cx, cy, radius, startAngle);
+    const end = polarToCartesian(cx, cy, radius, endAngle);
+    const largeArcFlag = angle > 180 ? 1 : 0;
+
+    const d = [
+      "M", start.x, start.y,
+      "A", radius, radius, 0, largeArcFlag, 1, end.x, end.y
+    ].join(" ");
+
+    document.getElementById(id).setAttribute("d", d);
+  }
+
+  function getCurrentDayFromEndDate(endDateStr) {
+    if (!endDateStr) return 0;
+    const endDate = new Date(endDateStr);
+    const today = new Date();
+    endDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diffTime = endDate - today;
+    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.min(MAX_DAYS - daysLeft, MAX_DAYS));
+  }
+
+  function drawTicks(prefix, currentDay) {
+	  const tickGroup = document.getElementById(prefix + "TickMarks");
+	  tickGroup.innerHTML = ""; // clear old
+
+	  const cx = 150;
+	  const cy = 150;
+	  const rOuter = 130;  // circle radius
+	  const rTickEnd = 140; // tick length 10px outside circle
+	  const rLabel = 150; // label radius slightly outside tick end
+
+	  for (let i = 1; i <= MAX_DAYS; i++) {
+		const angle = i * (360 / MAX_DAYS) + 90;
+		const start = polarToCartesian(cx, cy, rOuter, angle);
+		const end = polarToCartesian(cx, cy, rTickEnd, angle);
+
+		// Tick line
+		const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+		line.setAttribute("x1", start.x);
+		line.setAttribute("y1", start.y);
+		line.setAttribute("x2", end.x);
+		line.setAttribute("y2", end.y);
+		line.setAttribute("stroke", "#333");
+		line.setAttribute("stroke-width", "1");
+		tickGroup.appendChild(line);
+
+		// Label ONLY for the current day
+		if (i === currentDay) {
+		  const labelPos = polarToCartesian(cx, cy, rLabel, angle);
+		  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+		  label.setAttribute("x", labelPos.x);
+		  label.setAttribute("y", labelPos.y + 3); // small vertical adjustment
+		  label.setAttribute("text-anchor", "middle");
+		  label.setAttribute("class", "tick-label");
+		  label.textContent = i;
+		  tickGroup.appendChild(label);
+		}
+	  }
+	}
+
+
+  function updateChart(prefix) {
+    const outerCurrent = parseFloat(document.getElementById(prefix + "OuterCurrent").value);
+    const outerMax = parseFloat(document.getElementById(prefix + "OuterMax").value);
+    const endDateStr = document.getElementById(prefix + "EndDate").value;
+
+    // Store inputs separately per prefix
+    localStorage.setItem(prefix + "OuterCurrent", outerCurrent);
+    localStorage.setItem(prefix + "OuterMax", outerMax);
+    localStorage.setItem(prefix + "EndDate", endDateStr);
+
+    let yellowValue = 0;
+    if (endDateStr) {
+      yellowValue = getCurrentDayFromEndDate(endDateStr);
+	  currentDay = yellowValue;
+      updateArc(prefix + "YellowArc", yellowValue, MAX_DAYS, 120);
+    } else {
+      updateArc(prefix + "YellowArc", 0, MAX_DAYS, 120);
+	  currentDay = 0;
+    }
+	
+	drawTicks(prefix, currentDay);
+
+    const greenPercent = outerCurrent / outerMax;
+    const yellowPercent = yellowValue / MAX_DAYS;
+
+    const diff = greenPercent - yellowPercent;
+    let color = "orange";
+	console.log(greenPercent, yellowPercent);
+    if (greenPercent <= yellowPercent - 1/30) color = "green";
+    else if (greenPercent > yellowPercent) color = "red";
+
+    updateWedge(prefix + "OuterWedge", outerCurrent, outerMax, 130, color);
+  }
+
+  function restoreInputs(prefix) {
+    const outerCurrent = localStorage.getItem(prefix + "OuterCurrent");
+    const outerMax = localStorage.getItem(prefix + "OuterMax");
+    const endDate = localStorage.getItem(prefix + "EndDate");
+
+    if (outerCurrent !== null) document.getElementById(prefix + "OuterCurrent").value = outerCurrent;
+    if (outerMax !== null) document.getElementById(prefix + "OuterMax").value = outerMax;
+    if (endDate !== null) document.getElementById(prefix + "EndDate").value = endDate;
+  }
+
+  // Init both charts
+  ["Touch", "Alfa"].forEach(prefix => {
+//    drawTicks(prefix);
+    restoreInputs(prefix);
+    updateChart(prefix);
+  });
+
+</script>
+
+</body>
+</html>
